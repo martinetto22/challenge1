@@ -50,12 +50,15 @@ Con esta configuración terminamos el primer punto del challenge 1.
 
 ### Objetivo 2:  Ensure that a pod will not be scheduled on a node that already has a pod of the same type.
 
-Para evitar tener pods repetidos en un mismo nodo vamos ha hacer uso de la Anit-Affinity.
-Aumentamos el numero de nodos del clúster a 5:
+Para evitar tener pods repetidos en un mismo nodo vamos ha hacer uso de la Anit-Affinity. Esto garantizará que los pods se distribuyan en nodos diferentes.
+
+He aumentado el número de nodos del clúster a 5 para dar mayor flexibilidad en la distribución de los pods.
+
+Comando para añadir un nodo:
 
 #### minikube node add
 
-cambios realizados en deployment.yaml para impedir que pods iguales se ejecuten en el mismo nodo:
+Se ha realizado los siguientes cambios en el archivo deployment.yaml para evitar que los pods del mismo tipo se ejecuten en el mismo nodo:
 
     affinity:
     podAntiAffinity:
@@ -63,10 +66,34 @@ cambios realizados en deployment.yaml para impedir que pods iguales se ejecuten 
         - labelSelector: {}
             topologyKey: "kubernetes.io/hostname"
 
+### Verificación del funcionamiento
+
 Para comprobar el correcto funcionamiento pondremos el replicaCount a 5:
 ![Alt text](./images/pods_affinity.png)
 
-Al tener solamente 3 nodos libres solamente podemos tener 3 pods.
+Al tener solamente 3 nodos, Kubernetes puede ejecutar un máximo de 3 pods, los otros quedan en estado "Pending".
 
-Tras reducir el replicaCount a 3, los pods pueden distribuirse adecuadamente entre nuestros nodos:
+Después de reducir el replicaCount a 3, los pods pueden distribuirse correctamente entre los nodos disponibles:
 ![Alt text](./images/pods_affinity_fine.png)
+
+
+### Objetivo 3: Pods are deployed across diﬀerent availability zones.
+
+Para simular distintas zonas de disponibilidad en nuestro clúster, hemos etiquetado los nodos con la etiqueta topology.kubernetes.io/zone=zone-{a}. Esto permitirá que Kubernetes entienda a qué zona pertenece cada nodo y programe los pods de forma distribuida.
+
+De modo que tenemos los nodos en las siguientes zonas de disponibilidad
+
+![Alt text](./images/nodes-AZ.png)
+
+#### Aplicación de restricciones de distribución en deployment.yaml
+Para asegurarnos de que los pods se distribuyan de manera uniforme entre las diferentes zonas de disponibilidad, hemos agregado las siguientes restricciones de dispersión topológica (topology spread constraints) en el archivo deployment.yaml:
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/instance: {{ .Release.Name }} 
+
+Con esta configuración, nos aseguramos de que los pods se distribuyan uniformemente entre las diferentes zonas de disponibilidad, mejorando la resiliencia y tolerancia a fallos en nuestro clúster.
