@@ -74,3 +74,14 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
+
+job:
+  enabled: true
+  image:
+    repository: alpine
+    tag: latest
+  scripts:
+    - script1.sh
+    - script2.sh
+    - script3.sh
+

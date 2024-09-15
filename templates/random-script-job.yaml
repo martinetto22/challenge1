@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "ping.fullname" . }}-random-script
+  labels:
+    {{- include "ping.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "ping.selectorLabels" . | nindent 8 }}
+    spec:
+      priorityClassName: high-priority
+      restartPolicy: Never
+      containers:
+        - name: random-script
+          image: martinetto/my-random-scripts:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Ejecutando script aleatorio..."
+              set -- {{ .Values.job.scripts | join " " }}
+              RANDOM_SCRIPT=$(eval echo \$$((RANDOM % $# + 1)))
+              echo "Script seleccionado: $RANDOM_SCRIPT"
+              /scripts/$RANDOM_SCRIPT
+              sleep 3
+

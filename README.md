@@ -97,3 +97,40 @@ Para asegurarnos de que los pods se distribuyan de manera uniforme entre las dif
               app.kubernetes.io/instance: {{ .Release.Name }} 
 
 Con esta configuración, nos aseguramos de que los pods se distribuyan uniformemente entre las diferentes zonas de disponibilidad, mejorando la resiliencia y tolerancia a fallos en nuestro clúster.
+
+
+### Objetivo 4: Ensure a random script is run on every helm update execution.
+Cada vez que actualizamos la release, queremos que se lanze un script aleatorio. El funcionamiento que se ha implementado es el sigueinte:
+
+1. Creación de un fichero random-script-job.yaml en el que definiremos una job en la fase de post-upgrade.
+2. Creación de tres scripts simples.
+3. Crear una imagen de docker y subirla en Docker Hub.
+4. Creación de un priorityClass para asegurarnos de que siempre se ejecute la job.
+
+#### random-script-job.yaml
+Este archivo define un Job que ejecuta un script aleatorio desde una lista predefinida. Utiliza la imagen martinetto/my-random-scripts:latest y selecciona aleatoriamente uno de los scripts especificados en Values.job.scripts. El Job tiene una alta prioridad (high-priority) para asegurar que se ejecute antes que otros pods en el clúster. Además, está configurado como un hook post-upgrade en Helm, lo que significa que se ejecutará automáticamente después de una actualización del chart.
+
+#### Creación de tres scripts simples
+En esta fase, se ha desarrollado un Dockerfile que crea una imagen basada en Alpine Linux con tres scripts simples, cada uno de los cuales realiza una tarea específica. La imagen utiliza bash para ejecutar los scripts y los hace ejecutables dentro del contenedor.
+
+Base de la imagen: alpine:latest, una imagen ligera y minimalista de Linux.
+Instalación de bash: Usamos apk add --no-cache bash para instalar bash en Alpine, ya que Alpine utiliza sh de manera predeterminada y necesitamos bash para los scripts.
+
+Scripts:
+1. script1.sh: Muestra la hora actual utilizando el comando date.
+2. script2.sh: Ejecuta una tarea personalizada, mostrando un mensaje de texto.
+3. script3.sh: Proporciona información del sistema con el comando uname -a.
+
+Este archivo define una PriorityClass en Kubernetes que asigna una alta prioridad a los pods que usan esta clase. En este caso, se utiliza para asegurar que los pods que ejecutan un script aleatorio tengan preferencia en la programación.
+
+#### Creación de un priorityClass
+
+    apiVersion: scheduling.k8s.io/v1
+    kind: PriorityClass
+    metadata:
+        name: high-priority
+    value: 100000
+    globalDefault: false
+    description: "Esta prioridad es para lanzar un script aleatorio."
+
+Definiendo esta priorityClass se garantiza que el Job que ejecuta el script aleatorio se programe antes que otros pods, dándole prioridad en situaciones de recursos limitados.
