@@ -13,7 +13,7 @@ El clúster está compuesto por los siguientes nodos:
 
 
 ## Challenge 1
-### Objetivo: Isolate speciﬁc node groups forbidding the pods scheduling in this node groups.
+### Objetivo 1: Isolate speciﬁc node groups forbidding the pods scheduling in this node groups.
 
 Para este challenge, aislaremos determinados nodos en el clúster utilizando taints, de manera que se controlará en qué nodos pueden ejecutarse los pods.
 
@@ -47,3 +47,26 @@ Comando para ver a que nodo pertenece cada pod:
 
 Modificando el replicaCount en el fichero values.yaml, se ve como se respeta el taint añadido en ambos nodos.
 Con esta configuración terminamos el primer punto del challenge 1.
+
+### Objetivo 2:  Ensure that a pod will not be scheduled on a node that already has a pod of the same type.
+
+Para evitar tener pods repetidos en un mismo nodo vamos ha hacer uso de la Anit-Affinity.
+Aumentamos el numero de nodos del clúster a 5:
+
+#### minikube node add
+
+cambios realizados en deployment.yaml para impedir que pods iguales se ejecuten en el mismo nodo:
+
+    affinity:
+    podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector: {}
+            topologyKey: "kubernetes.io/hostname"
+
+Para comprobar el correcto funcionamiento pondremos el replicaCount a 5:
+![Alt text](./images/pods_affinity.png)
+
+Al tener solamente 3 nodos libres solamente podemos tener 3 pods.
+
+Tras reducir el replicaCount a 3, los pods pueden distribuirse adecuadamente entre nuestros nodos:
+![Alt text](./images/pods_affinity_fine.png)

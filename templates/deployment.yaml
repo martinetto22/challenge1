@@ -27,6 +27,11 @@ spec:
       serviceAccountName: {{ include "ping.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector: {}
+              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
