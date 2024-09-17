@@ -1,5 +1,10 @@
-# Documentación Challenge
+# Challenge 1: Modificación del Helm Chart para Reglas de Despliegue en AKS
 Durante la fase de desarrollo del Challenge 1, se trabajará con Minikube. Utilizaremos un clúster compuesto por 4 nodos, incluyendo el nodo de control plane.
+
+## Requisitos previos
+- **Minikube:** Utilizado para crear y gestionar clústeres de Kubernetes localmente.
+- **kubectl:** Necesario para interactuar con el clúster de Kubernetes y gestionar los pods y otros recursos.
+- **Helm:** Requerido para modificar y desplegar el chart con las restricciones especificadas.
 
 
 ## Arquitectura del clúster
@@ -11,29 +16,27 @@ El clúster está compuesto por los siguientes nodos:
 * minikube-m04: Nodo sin restricciones (sin taints).
 
 
+### Objetivo 1: Aislar grupos de nodos específicos impidiendo que se programen pods en estos grupos de nodos.
 
-## Challenge 1
-### Objetivo 1: Isolate speciﬁc node groups forbidding the pods scheduling in this node groups.
-
-Para este challenge, aislaremos determinados nodos en el clúster utilizando taints, de manera que se controlará en qué nodos pueden ejecutarse los pods.
+Para este objetivo, aislaremos determinados nodos en el clúster utilizando taints, de manera que se controlará en qué nodos pueden ejecutarse los pods.
 
 ### 1. Creación del clúster 
 
 Comando ejecutado para la creación del clúster con 4 nodos:
 
-**minikube start --nodes 4 --driver=docker --memory 1900 --cpus 2**
+    minikube start --nodes 4 --driver=docker --memory 1900 --cpus 2
 
 ### 2. Aplicación de taints
 
 Comando taint nodo aleatorio (minikube-m03):
 
-**kubectl taint nodes minikube-m03 special=isolated:NoSchedule**
+    kubectl taint nodes minikube-m03 special=isolated:NoSchedule
 
 Comando taint control-plane(minikube):
 
-**kubectl taint nodes minikube node-role.kubernetes.io/control-plane=:NoSchedule**
+    kubectl taint nodes minikube node-role.kubernetes.io/control-plane=:NoSchedule
 
-Imagen que muestra que nodos tienen taints:
+Imagen que muestra qué nodos tienen taints:
 
 ![Alt text](./images/taints.png)
 
@@ -41,14 +44,14 @@ Imagen que muestra que nodos tienen taints:
 
 Comando para ver a que nodo pertenece cada pod:
 
-**kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints**
+    kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints
 
 ![Alt text](./images/pods_node.png)
 
 Modificando el replicaCount en el fichero values.yaml, se ve como se respeta el taint añadido en ambos nodos.
 Con esta configuración terminamos el primer punto del challenge 1.
 
-### Objetivo 2:  Ensure that a pod will not be scheduled on a node that already has a pod of the same type.
+### Objetivo 2:  Asegurar que un pod no se programe en un nodo que ya tiene un pod del mismo tipo.
 
 Para evitar tener pods repetidos en un mismo nodo vamos ha hacer uso de la Anit-Affinity. Esto garantizará que los pods se distribuyan en nodos diferentes.
 
@@ -56,7 +59,7 @@ He aumentado el número de nodos del clúster a 5 para dar mayor flexibilidad en
 
 Comando para añadir un nodo:
 
-#### minikube node add
+    minikube node add
 
 Se ha realizado los siguientes cambios en el archivo deployment.yaml para evitar que los pods del mismo tipo se ejecuten en el mismo nodo:
 
@@ -77,7 +80,7 @@ Después de reducir el replicaCount a 3, los pods pueden distribuirse correctame
 ![Alt text](./images/pods_affinity_fine.png)
 
 
-### Objetivo 3: Pods are deployed across diﬀerent availability zones.
+### Objetivo 3: Que los pods se despliegen en diferentes zonas de disponibilidad.
 
 Para simular distintas zonas de disponibilidad en nuestro clúster, hemos etiquetado los nodos con la etiqueta topology.kubernetes.io/zone=zone-{a}. Esto permitirá que Kubernetes entienda a qué zona pertenece cada nodo y programe los pods de forma distribuida.
 
@@ -99,7 +102,7 @@ Para asegurarnos de que los pods se distribuyan de manera uniforme entre las dif
 Con esta configuración, nos aseguramos de que los pods se distribuyan uniformemente entre las diferentes zonas de disponibilidad, mejorando la resiliencia y tolerancia a fallos en nuestro clúster.
 
 
-### Objetivo 4: Ensure a random script is run on every helm update execution.
+### Objetivo 4: Asegurar que se ejecute un script aleatorio en cada actualización de Helm.
 Cada vez que actualizamos la release, queremos que se lanze un script aleatorio. El funcionamiento que se ha implementado es el sigueinte:
 
 1. Creación de un fichero random-script-job.yaml en el que definiremos una job en la fase de post-upgrade.
